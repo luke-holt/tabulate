@@ -27,7 +27,7 @@ main(int argc, char *argv[])
     // input
 
     FILE *f;
-    f = fopen("airtravel.csv", "r");
+    f = fopen("csv/test.csv", "r");
 
     lines = da_create(sizeof(Line *), 32);
 
@@ -43,7 +43,7 @@ main(int argc, char *argv[])
 
     fclose(f);
 
-    // print
+    // format
 
     size_t cols, *widths, max;
     cols = lines[0]->ncells;
@@ -54,6 +54,8 @@ main(int argc, char *argv[])
             max = MAX(max, strlen(lines[r]->cells[c]));
         widths[c] = max;
     }
+
+    // print
 
     for (size_t r = 0; r < da_len(lines); r++) {
         char rowstr[256];
