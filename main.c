@@ -39,7 +39,6 @@ main(int argc, char *argv[])
     else if (argc == 2) {
         // read file
         char *name = argv[1];
-        size_t len = strlen(name);
         if (access(name, F_OK))
             die("Could not find %s", name);
         fin = fopen(name, "r");
