@@ -1,12 +1,16 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "util.h"
 #include "dynamic_array.h"
 
 #define MAX_LINE_LEN (256u)
+
+#define HELP "usage: table <csv-file>"
 
 typedef struct {
     char *str;
@@ -24,24 +28,48 @@ static Line **lines;
 int
 main(int argc, char *argv[])
 {
-    // input
+    FILE *fin;
+    bool fin_is_stdin;
 
-    FILE *f;
-    f = fopen("csv/test.csv", "r");
+    // args
+
+    if (argc > 2) {
+        die(HELP);
+    }
+    else if (argc == 2) {
+        // read file
+        char *name = argv[1];
+        size_t len = strlen(name);
+        if (access(name, F_OK))
+            die("Could not find %s", name);
+        fin = fopen(name, "r");
+        fin_is_stdin = true;
+    }
+    else {
+        // read stdin
+        fin = stdin;
+        fin_is_stdin = false;
+    }
+
+    // process input
 
     lines = da_create(sizeof(Line *), 32);
 
     Line *l;
     char *in;
-    while ((in = fgets(ibuf, sizeof(ibuf), f))) {
+    while ((in = fgets(ibuf, sizeof(ibuf), fin))) {
         int len = strlen(in);
         assert(MAX_LINE_LEN >= len);
+
+        // ignore empty lines
+        if ('\n' == in[0])
+            continue;
 
         l = line_create(in, len);
         da_append(lines, &l);
     }
-
-    fclose(f);
+    if (fin_is_stdin)
+        fclose(fin);
 
     // format
 
