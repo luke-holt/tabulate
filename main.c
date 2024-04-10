@@ -19,18 +19,23 @@ typedef struct {
     size_t ncells;
 } Line;
 
-static Line *line_create(char *str, size_t len);
+
+static char *readline(void);
+
+static Line *line_from_csv(char *str, size_t len);
 static void line_free(Line *line);
 
-static char ibuf[MAX_LINE_LEN];
+static FILE *fin;
+bool fin_is_stdin;
+
+static char inbuf[MAX_LINE_LEN];
+static size_t inbuf_len;
+
 static Line **lines;
 
 int
 main(int argc, char *argv[])
 {
-    FILE *fin;
-    bool fin_is_stdin;
-
     // args
 
     if (argc > 2) {
@@ -55,17 +60,10 @@ main(int argc, char *argv[])
     lines = da_create(sizeof(Line *), 32);
 
     Line *l;
-    char *in;
-    while ((in = fgets(ibuf, sizeof(ibuf), fin))) {
-        int len = strlen(in);
-        assert(MAX_LINE_LEN >= len);
-
-        // ignore empty lines
-        if ('\n' == in[0])
-            continue;
-
-        l = line_create(in, len);
-        da_append(lines, &l);
+    while (readline()) {
+        l = line_from_csv(inbuf, inbuf_len);
+        if (l)
+            da_append(lines, &l);
     }
     if (fin_is_stdin)
         fclose(fin);
@@ -109,7 +107,7 @@ main(int argc, char *argv[])
 }
 
 Line *
-line_create(char *str, size_t len)
+line_from_csv(char *str, size_t len)
 {
     Line *l;
     l = emalloc(sizeof(Line));
@@ -123,6 +121,7 @@ line_create(char *str, size_t len)
             l->ncells++;
             l->str[i] = '\0';
         }
+
     }
 
     l->cells = ecalloc(l->ncells, sizeof(char *));
@@ -142,5 +141,17 @@ line_free(Line *line)
     free(line->str);
     free(line->cells);
     free(line);
+}
+
+char *
+readline(void)
+{
+    char *p;
+    p = fgets(inbuf, sizeof(inbuf), fin);
+    if (p) {
+        inbuf_len = strlen(inbuf);
+        assert(MAX_LINE_LEN >= inbuf_len);
+    }
+    return p;
 }
 
