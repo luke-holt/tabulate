@@ -5,7 +5,7 @@ Sample CSV files borrowed from [here](https://people.sc.fsu.edu/~jburkardt/data/
 
 # Example
 ```sh
-$ cat csv/test.csv | ./app
+$ cat csv/test.csv | ./tabulate
 username   email                   id    first name  last name
 booker12   rachel@yourcompany.com  9012  Rachel      Booker
 grey07     laura@yourcompany.com   2070  Laura       Grey
@@ -13,7 +13,7 @@ johnson81  craig@yourcompany.com   4081  Craig       Johnson
 jenkins46  mary@yourcompany.com    9346  Mary        Jenkins
 smith79    jamie@yourcompany.com   5079  Jamie       Smith
 
-$ ./app csv/addresses.csv
+$ ./tabulate csv/addresses.csv
 John                   Doe       120 jefferson st.                 Riverside    NJ  08075
 Jack                   McGinnis  220 hobo Av.                      Phila        PA  09119
 John "Da Man"          Repici    120 Jefferson St.                 Riverside    NJ  08075
@@ -21,7 +21,7 @@ Stephen                Tyler     7452 Terrace "At the Plaza" road  SomeTown     
                        Blankman                                    SomeTown     SD  00298
 Joan "the bone", Anne  Jet       9th, at Terrace plc               Desert City  CO  00123
 
-$ ./app < csv/airtravel.csv
+$ ./tabulate < csv/airtravel.csv
 Month  1958  1959  1960
 JAN    340   360   417
 FEB    318   342   391
