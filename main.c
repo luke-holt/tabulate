@@ -20,7 +20,7 @@ typedef struct {
 } Line;
 
 
-static char *readline(void);
+static size_t sanitize_str(char *str);
 
 static Line *line_from_csv(char *str, size_t len);
 static void line_free(Line *line);
@@ -60,7 +60,8 @@ main(int argc, char *argv[])
     lines = da_create(sizeof(Line *), 32);
 
     Line *l;
-    while (readline()) {
+    while (fgets(inbuf, MAX_LINE_LEN, fin)) {
+        inbuf_len = sanitize_str(inbuf);
         l = line_from_csv(inbuf, inbuf_len);
         if (l)
             da_append(lines, &l);
@@ -91,7 +92,7 @@ main(int argc, char *argv[])
             char *s;
             s = lines[r]->cells[c];
             strncpy(&rowstr[offset], s, strlen(s));
-            offset += widths[c] + 1;
+            offset += widths[c] + 2;
         }
         rowstr[offset] = '\0';
         printf("%s\n", rowstr);
@@ -111,17 +112,15 @@ line_from_csv(char *str, size_t len)
 {
     Line *l;
     l = emalloc(sizeof(Line));
+
     l->str = emalloc(len);
-    strncpy(l->str, str, len);
+    memcpy(l->str, str, len);
     l->len = len;
 
     l->ncells = 0;
     for (size_t i = 0; i < l->len; i++) {
-        if ((l->str[i] == ',') || (l->str[i] == '\n')) {
+        if (l->str[i] == '\0')
             l->ncells++;
-            l->str[i] = '\0';
-        }
-
     }
 
     l->cells = ecalloc(l->ncells, sizeof(char *));
@@ -135,23 +134,54 @@ line_from_csv(char *str, size_t len)
     return l;
 }
 
+size_t
+sanitize_str(char *str)
+{
+    char *write;
+    bool escape;
+    size_t i, len;
+
+    if (MAX_LINE_LEN < strlen(str))
+        die("MAX_LINE_LEN:(%lu) < strlen(str):(%lu)", MAX_LINE_LEN, strlen(str));
+
+    write = str;
+    escape = false;
+    i = len = 0;
+    while (str[i] != '\0') {
+        // escaped double quote
+        if (str[i] == '"' && str[i+1] == '"') {
+            i++;
+        }
+        // open double quote
+        else if (!escape && str[i] == '"') {
+            escape = true;
+            i++;
+            continue;
+        }
+        // close double quote
+        else if (escape && str[i] == '"') {
+            escape = false;
+            i++;
+            continue;
+        }
+
+        // replace comma and newline w terminator
+        if (!escape && ((str[i] == ',') || (str[i] == '\n')))
+            str[i] = '\0';
+
+        *write++ = str[i++];
+        len++;
+    }
+    *write = '\0';
+    len++;
+    return len;
+}
+
 void
 line_free(Line *line)
 {
     free(line->str);
     free(line->cells);
     free(line);
-}
-
-char *
-readline(void)
-{
-    char *p;
-    p = fgets(inbuf, sizeof(inbuf), fin);
-    if (p) {
-        inbuf_len = strlen(inbuf);
-        assert(MAX_LINE_LEN >= inbuf_len);
-    }
-    return p;
 }
 
