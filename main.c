@@ -1,8 +1,7 @@
-#include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "util.h"
@@ -25,9 +24,6 @@ static size_t sanitize_str(char *str);
 static Line *line_from_csv(char *str, size_t len);
 static void line_free(Line *line);
 
-static FILE *fin;
-bool fin_is_stdin;
-
 static char inbuf[MAX_LINE_LEN];
 static size_t inbuf_len;
 
@@ -36,6 +32,9 @@ static Line **lines;
 int
 main(int argc, char *argv[])
 {
+    FILE *file;
+    bool file_is_stdin;
+
     // args
 
     if (argc > 2) {
@@ -46,13 +45,13 @@ main(int argc, char *argv[])
         char *name = argv[1];
         if (access(name, F_OK))
             die("Could not find %s", name);
-        fin = fopen(name, "r");
-        fin_is_stdin = true;
+        file = fopen(name, "r");
+        file_is_stdin = false;
     }
     else {
         // read stdin
-        fin = stdin;
-        fin_is_stdin = false;
+        file = stdin;
+        file_is_stdin = true;
     }
 
     // process input
@@ -60,14 +59,14 @@ main(int argc, char *argv[])
     lines = da_create(sizeof(Line *), 32);
 
     Line *l;
-    while (fgets(inbuf, MAX_LINE_LEN, fin)) {
+    while (fgets(inbuf, MAX_LINE_LEN, file)) {
         inbuf_len = sanitize_str(inbuf);
         l = line_from_csv(inbuf, inbuf_len);
         if (l)
             da_append(lines, &l);
     }
-    if (fin_is_stdin)
-        fclose(fin);
+    if (!file_is_stdin)
+        fclose(file);
 
     // format
 
@@ -90,8 +89,11 @@ main(int argc, char *argv[])
         offset = 0;
         for (size_t c = 0; c < cols; c++) {
             char *s;
+            size_t len;
             s = lines[r]->cells[c];
-            strncpy(&rowstr[offset], s, strlen(s));
+            len = strlen(s);
+            if (len) strncpy(&rowstr[offset], s, len);
+            else rowstr[offset] = '-';
             offset += widths[c] + 2;
         }
         rowstr[offset] = '\0';
